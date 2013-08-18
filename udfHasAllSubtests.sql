@@ -21,29 +21,33 @@ CREATE FUNCTION udfHasAllSubtests
 	@AssessedPersonID INT,
 	@MeasureTypeID INT,
 	@MeasureSubscaleTypeID INT,
-	@PreTest bit = 1,
-	@PostTest bit = 1,
-	@ThreeMo bit = 0,
-	@SixMo bit = 0,
-	@NineMo bit = 0,
-	@TwelveMo bit = 0
+	@IncludePreTest bit = 1,
+	@IncludePostTest bit = 1,
+	@IncludeThreeMo bit = 0,
+	@IncludeSixMo bit = 0,
+	@IncludeNineMo bit = 0,
+	@IncludeTwelveMo bit = 0
 )
-RETURNS TABLE
+RETURNS @table TABLE (MissingCount INT)
 AS
+BEGIN
+	DECLARE @PreTest INT, @PostTest INT, @ThreeMonth INT, @SixMonth INT, @NineMonth INT, @TwelveMonth INT
+	SELECT @PreTest = 1, @PostTest = 2, @ThreeMonth = 5, @SixMonth = 3, @NineMonth = 6, @TwelveMonth = 4
 
-	RETURN SELECT COUNT(*) as MissingCount
+	INSERT @table 
+	SELECT COUNT(*) as MissingCount
 	FROM
 		(
 			SELECT OcassionTypeID
 			FROM OcassionType
 			--PreTest = 1, PostTest = 2, 3 Mo = 5, 6mo = 3, 9mo = 6, 12mo = 4
 			WHERE (
-					(@PreTest = 1 AND OcassionTypeID = 1) OR
-					(@PostTest = 1 AND OcassionTypeID = 2) OR
-					(@ThreeMo = 1 AND OcassionTypeID = 5) OR
-					(@SixMo = 1 AND OcassionTypeID = 3) OR
-					(@NineMo = 1 AND OcassionTypeID = 6) OR
-					(@TwelveMo = 1 AND OcassionTypeID = 4)
+					(@IncludePreTest = 1 AND OcassionTypeID = @PreTest) OR
+					(@IncludePostTest = 1 AND OcassionTypeID = @PostTest) OR
+					(@IncludeThreeMo = 1 AND OcassionTypeID = @ThreeMonth) OR
+					(@IncludeSixMo = 1 AND OcassionTypeID = @SixMonth) OR
+					(@IncludeNineMo = 1 AND OcassionTypeID = @NineMonth) OR
+					(@IncludeTwelveMo = 1 AND OcassionTypeID = @TwelveMonth)
 				)
 		) as ot
 		LEFT JOIN (
@@ -62,5 +66,7 @@ AS
 			ON ot.OcassionTypeID = fi.OcassionTypeID
 	WHERE fi.OcassionTypeID IS NULL
 
+	RETURN
+END
 GO
 
