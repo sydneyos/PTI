@@ -6,7 +6,7 @@ DROP PROCEDURE [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccasio
 GO
 
 
-/****** Object:  StoredProcedure [dbo].[spPrePostInterventionMeasureScoreAnalysis_simple]    Script Date: 8/11/2013 9:19:32 AM ******/
+/****** Object:  StoredProcedure [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccasion]    Script Date: 8/11/2013 9:19:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -39,6 +39,21 @@ CREATE PROCEDURE [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccas
 	@IncludeTwelveMonth					bit = 1
 AS
 
+DECLARE @PreTest INT,
+	@PostTest INT,
+	@ThreeMonth INT,
+	@SixMonth INT,
+	@TwelveMonth INT,
+	@Dass INT,
+	@Ecbi INT,
+	@Ps INT,
+	@Raw INT,
+	@RawDoubled INT
+
+SELECT @PreTest = 1, @PostTest = 2, @ThreeMonth = 5, @SixMonth = 3, @TwelveMonth = 4,
+	@Dass = 4, @Ecbi = 1, @Ps = 3,
+	@Raw = 5, @RawDoubled = 3
+	
 SELECT 
 	 T.MeasureTypeID 
 	, Measure
@@ -60,24 +75,26 @@ SELECT
 	, CAST(STDEV(SixMo) as decimal (10,2)) as StdevSixMo
 	, CAST(STDEV(TwelveMo) as decimal (10,2)) as StdevTwelveMo
 FROM  (
-	SELECT 
-		MeasureTypeID 
-		,Measure
-		,MeasureSubscaleTypeID
-		,MeasureSubscaleType
-		,ScoreTypeID
-		,SortOrder
-		,[Score Type]
-		, MAX(CASE OcassionTypeID WHEN 1 THEN NumericScore ELSE NULL END) as PreTest
-		, MAX(CASE OcassionTypeID WHEN 2 THEN NumericScore ELSE NULL END) as PostTest
-		, MAX(CASE OcassionTypeID WHEN 5 THEN NumericScore ELSE NULL END) as ThreeMo
-		, MAX(CASE OcassionTypeID WHEN 3 THEN NumericScore ELSE NULL END) as SixMo
-		, MAX(CASE OcassionTypeID WHEN 4 THEN NumericScore ELSE NULL END) as TwelveMo
+	SELECT DISTINCT
+		 InterventionID
+		, MeasureTypeID 
+		, Measure
+		, MeasureSubscaleTypeID
+		, MeasureSubscaleType
+		, AssessedPersonID
+		, ScoreTypeID
+		, SortOrder
+		, [Score Type]
+		, MAX(CASE OcassionTypeID WHEN @PreTest THEN NumericScore ELSE NULL END) as PreTest
+		, MAX(CASE OcassionTypeID WHEN @PostTest THEN NumericScore ELSE NULL END) as PostTest
+		, MAX(CASE OcassionTypeID WHEN @ThreeMonth THEN NumericScore ELSE NULL END) as ThreeMo
+		, MAX(CASE OcassionTypeID WHEN @SixMonth THEN NumericScore ELSE NULL END) as SixMo
+		, MAX(CASE OcassionTypeID WHEN @TwelveMonth THEN NumericScore ELSE NULL END) as TwelveMo
 	FROM 
 		(
 			SELECT vw.*
 			FROM vwAgencyInterventionPersonMeasureSubscaleValue vw
-			CROSS APPLY dbo.udfHasAllSubtests(vw.AssessedPersonID, vw.MeasureTypeID, vw.MeasureSubscaleTypeID, 1, 1, @IncludeThreeMonth, @IncludeSixMonth, 0, @IncludeTwelveMonth) c
+			CROSS APPLY dbo.udfHasAllSubtests(vw.InterventionID, vw.AssessedPersonID, vw.MeasureTypeID, vw.MeasureSubscaleTypeID, 1, 1, @IncludeThreeMonth, @IncludeSixMonth, 0, @IncludeTwelveMonth) c
 			WHERE
 				(
 					c.MissingCount = 0
@@ -86,7 +103,8 @@ FROM  (
 					AND ( vw.InterventionID			= @InterventionID		OR @InterventionID IS NULL )
 					AND ( vw.InterventionTypeID		= @InterventionTypeID	OR @InterventionTypeID IS NULL )
 					AND ( vw.InterventionSubtypeID	= @InterventionSubtypeID	OR @InterventionSubtypeID IS NULL )
-
+					
+					AND ( vw.MeasureTypeID IN (@Dass, @Ecbi, @Ps))
 					AND ( vw.MeasureTypeID			= @MeasureTypeID		OR @MeasureTypeID IS NULL )
 					--AND ( ScoreTypeID				= @ScoreTypeID			OR @ScoreTypeID IS NULL	 )	
 			
@@ -97,7 +115,7 @@ FROM  (
 					AND ( vw.AgencyID		<> @Exclude_AgencyID		OR @Exclude_AgencyID	IS NULL )
 					AND 
 						(	
-						vw.InterventionID NOT IN ( SELECT InterventionID FROM Intervention_Facilitator WHERE FacilitatorPersonID	= @Exclude_InterventionFacilitatorID )	
+						vw.InterventionID NOT IN ( SELECT InterventionID FROM Intervention_Facilitator WHERE FacilitatorPersonID = @Exclude_InterventionFacilitatorID )	
 						OR @Exclude_InterventionFacilitatorID IS NULL
 						)
 					AND ( @EthnicityID IS NULL OR vw.RespondentPersonID IN ( SELECT PersonID FROM Person_Ethnicity WHERE EthnicityID = @EthnicityID ) )
@@ -114,31 +132,37 @@ FROM  (
 					AND ( vw.DeliveryFormatTypeID	= @DeliveryFormatTypeID	OR @DeliveryFormatTypeID IS NULL )
 					--is a pre, post or specified f/u
 					AND (
-							( vw.OcassionTypeID IN (1,2) ) OR --is pre/post test
-							( (@IncludeThreeMonth = 0) OR (@IncludeThreeMonth = 1 AND vw.OcassionTypeID = 5) ) OR --is 3mo f/u and or 3mo f/u not selected
-							( (@IncludeSixMonth = 0) OR (@IncludeSixMonth = 1 AND vw.OcassionTypeID = 3) ) OR --is 6mo f/u or 6mo f/u not selected
-							( (@IncludeTwelveMonth = 0) OR (@IncludeTwelveMonth = 1 AND vw.OcassionTypeID = 4) ) --is 12mo f/u or 12mo f/u not selected
+							( vw.OcassionTypeID IN (@PreTest, @PostTest) ) OR --is pre/post test
+							( (@IncludeThreeMonth = 0) OR (@IncludeThreeMonth = 1 AND vw.OcassionTypeID = @ThreeMonth) ) OR --is 3mo f/u and or 3mo f/u not selected
+							( (@IncludeSixMonth = 0) OR (@IncludeSixMonth = 1 AND vw.OcassionTypeID = @SixMonth) ) OR --is 6mo f/u or 6mo f/u not selected
+							( (@IncludeTwelveMonth = 0) OR (@IncludeTwelveMonth = 1 AND vw.OcassionTypeID = @TwelveMonth) ) --is 12mo f/u or 12mo f/u not selected
 						)
+					AND vw.ScoreTypeID IN (@Raw, @RawDoubled)
 				)
 			) AS I
-		GROUP BY MeasureTypeID 
-		,Measure
-		,MeasureSubscaleTypeID
-		,MeasureSubscaleType
-		,ScoreTypeID
-		,SortOrder
-		,[Score Type]
-		,FormInstanceID
+		GROUP BY 
+		InterventionID
+		, MeasureTypeID 
+		, Measure
+		, MeasureSubscaleTypeID
+		, MeasureSubscaleType
+		, AssessedPersonID
+		, ScoreTypeID
+		, SortOrder
+		, [Score Type]
 	) 
 	AS T
 	INNER JOIN (
-		SELECT MeasureTypeID, MeasureSubscaleTypeID, ScoreTypeID, COUNT(*) as PreTestCount
-		FROM [dbo].[FormInstance_MeasureSubscaleValue_ScoreTypeID_Score] fis --include to ensure valid score
+		SELECT DISTINCT MeasureTypeID, MeasureSubscaleTypeID, ScoreTypeID, COUNT(*) as PreTestCount
+		FROM [dbo].[FormInstance] ifi
 			INNER JOIN [dbo].[FormInstance_MeasureSubscaleValue] fim
-				ON fis.FormInstanceMeasureSubscaleValueID = fim.FormInstanceMeasureSubscaleValueID
-			INNER JOIN [dbo].[FormInstance] ifi
 				ON fim.FormInstanceID = ifi.FormInstanceID
-		WHERE OcassionTypeID = 1
+			LEFT JOIN [dbo].[FormInstance_MeasureSubscaleValue_ScoreTypeID_Score] fis --include to ensure valid score
+				ON fis.FormInstanceMeasureSubscaleValueID = fim.FormInstanceMeasureSubscaleValueID
+		WHERE OcassionTypeID = @PreTest
+			AND (fim.FormInstanceMeasureSubscaleValueID IS NOT NULL)
+			AND (fim.Invalid = 0 OR fim.Invalid IS NULL)
+			--AND fis.NumericScore IS NOT NULL
 		GROUP BY MeasureTypeID, MeasureSubscaleTypeID, ScoreTypeID
 	) U
 		ON T.MeasureTypeID = U.MeasureTypeID

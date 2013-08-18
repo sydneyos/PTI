@@ -1,37 +1,17 @@
-USE [PTI]
-GO
-
-/****** Object:  UserDefinedFunction [dbo].[udfHasAllSubtests]    Script Date: 8/11/2013 3:54:04 PM ******/
-DROP FUNCTION [dbo].[udfHasAllSubtests]
-GO
-
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
--- ==============================================================================================
--- Author:		Sydney Osborne
--- Create date: 11 Aug 2013
--- Description:	Determine whether a respondent has all specified occasions for a given subtest
--- ==============================================================================================
-CREATE FUNCTION udfHasAllSubtests 
-(
-	@InterventionID INT,
-	@AssessedPersonID INT,
+DECLARE @AssessedPersonID INT,
 	@MeasureTypeID INT,
 	@MeasureSubscaleTypeID INT,
-	@PreTest bit = 1,
-	@PostTest bit = 1,
-	@ThreeMo bit = 0,
-	@SixMo bit = 0,
-	@NineMo bit = 0,
-	@TwelveMo bit = 0
-)
-RETURNS TABLE
-AS
+	@PreTest bit,
+	@PostTest bit,
+	@ThreeMo bit,
+	@SixMo bit,
+	@NineMo bit,
+	@TwelveMo bit
 
-	RETURN SELECT COUNT(*) as MissingCount
+--SELECT @PreTest = 1, @PostTest = 1, @PersonID = 6475, @MeasureTypeID = 3, @MeasureSubscaleTypeID = 14 -- both
+SELECT @PreTest = 1, @PostTest = 1, @AssessedPersonID = 6486, @MeasureTypeID = 4, @MeasureSubscaleTypeID = 18 -- one
+
+SELECT COUNT(*) as MissingCount
 	FROM
 		(
 			SELECT OcassionTypeID
@@ -48,19 +28,19 @@ AS
 		) as ot
 		LEFT JOIN (
 			SELECT ifi.OcassionTypeID
+			--SELECT ifi.AssessedPersonID, ifi.MeasureTypeID, fim.MeasureSubscaleTypeID,  ifi.OcassionTypeID
 			FROM [dbo].[FormInstance_MeasureSubscaleValue_ScoreTypeID_Score] fis --include to ensure valid score
 			INNER JOIN [dbo].[FormInstance_MeasureSubscaleValue] fim
 				ON fis.FormInstanceMeasureSubscaleValueID = fim.FormInstanceMeasureSubscaleValueID
 			INNER JOIN [dbo].[FormInstance] ifi
 				ON fim.FormInstanceID = ifi.FormInstanceID
+			--WHERE ifi.MeasureTypeID IN (4, 1, 3)
+			--ORDER BY ifi.AssessedPersonID, ifi.MeasureTypeID, fim.MeasureSubscaleTypeID, ifi.OcassionTypeID
 			WHERE 
-				ifi.InterventionID = @InterventionID
-				AND ifi.AssessedPersonID = @AssessedPersonID
+				ifi.AssessedPersonID = @AssessedPersonID
 				AND fim.MeasureSubscaleTypeID = @MeasureSubscaleTypeID
 				AND ifi.MeasureTypeID = @MeasureTypeID
+				AND (fim.Invalid = 0 OR fim.Invalid IS NULL)
 		) AS fi 
 			ON ot.OcassionTypeID = fi.OcassionTypeID
 	WHERE fi.OcassionTypeID IS NULL
-
-GO
-
