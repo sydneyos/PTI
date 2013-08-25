@@ -53,7 +53,10 @@ SELECT
 	TotalMembers,
 	SessionsCompleted,
 	AvgSessionsCompletedForPeopleWithData,
-	SessionsCompleted/TotalMembers as AvgSessionsCompleted
+	SessionsCompleted/TotalMembers as AvgSessionsCompleted,
+	(SessionsCompleted*100/TotalMembers)/TotalSessions as AvgPercentSessionsCompleted,
+	MembersWhoGraduated,
+	(MembersWhoGraduated*100)/TotalMembers as PercentGraduated
 FROM
 (
 	SELECT
