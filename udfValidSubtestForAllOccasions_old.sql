@@ -1,8 +1,10 @@
 USE [PTI]
 GO
 
-/****** Object:  UserDefinedFunction [dbo].[udfHasAllSubtests]    Script Date: 8/11/2013 3:54:04 PM ******/
-DROP FUNCTION [dbo].[udfHasAllSubtests]
+--SELECT * FROM dbo.udfValidSubtestForAllOccasions(1, 0, 0, 0, 0)
+
+/****** Object:  UserDefinedFunction [dbo].[udfValidSubtestForAllOccasions]    Script Date: 8/11/2013 3:54:04 PM ******/
+DROP FUNCTION [dbo].[udfValidSubtestForAllOccasions]
 GO
 
 SET ANSI_NULLS ON
@@ -15,21 +17,15 @@ GO
 -- Create date: 11 Aug 2013
 -- Description:	Determine whether a respondent has all specified occasions for a given subtest
 -- ==============================================================================================
-CREATE FUNCTION udfHasAllSubtests 
+CREATE FUNCTION udfValidSubtestForAllOccasions 
 (
-	@InterventionID INT,
-	@AssessedPersonID INT,
-	@RespondentPersonID INT,
-	@MeasureTypeID INT,
-	@MeasureSubscaleTypeID INT,
-	@IncludePreTest bit = 1,
 	@IncludePostTest bit = 1,
 	@IncludeThreeMo bit = 0,
 	@IncludeSixMo bit = 0,
 	@IncludeNineMo bit = 0,
 	@IncludeTwelveMo bit = 0
 )
-RETURNS @table TABLE (HasAll INT)
+RETURNS @table TABLE (InterventionID INT, AssessedPersonID INT, RespondentPersonID INT, MeasureTypeID INT, MeasureSubscaleTypeID INT)
 AS
 BEGIN
 	DECLARE @PreTest INT, @PostTest INT, @ThreeMonth INT, @SixMonth INT, @NineMonth INT, @TwelveMonth INT
@@ -37,7 +33,7 @@ BEGIN
 
 	INSERT @table 
 	
-	SELECT DISTINCT COUNT(*)
+	SELECT DISTINCT one.InterventionID, one.AssessedPersonID, one.RespondentPersonID, one.MeasureTypeID, one.MeasureSubscaleTypeID
 	FROM vwValidSubtestsForOccasion one
 	LEFT JOIN vwValidSubtestsForOccasion two
 		ON one.InterventionID = two.InterventionID
@@ -76,12 +72,6 @@ BEGIN
 	AND (@IncludeThreeMo = 0 OR (@IncludeThreeMo = 1 AND three.OcassionTypeID IS NOT NULL))
 	AND (@IncludeSixMo = 0 OR (@IncludeSixMo = 1 AND four.OcassionTypeID IS NOT NULL))
 	AND (@IncludeTwelveMo = 0 OR (@IncludeTwelveMo = 1 AND five.OcassionTypeID IS NOT NULL))
-	AND one.AssessedPersonID = @AssessedPersonID
-	AND one.RespondentPersonID = @RespondentPersonID
-	AND one.InterventionID = @InterventionID
-	AND one.MeasureTypeID = @MeasureTypeID
-	AND one.MeasureSubscaleTypeID = @MeasureSubscaleTypeID
-
 
 	RETURN
 END

@@ -82,6 +82,7 @@ FROM  (
 		, MeasureSubscaleTypeID
 		, MeasureSubscaleType
 		, AssessedPersonID
+		, RespondentPersonID
 		, ScoreTypeID
 		, SortOrder
 		, [Score Type]
@@ -94,11 +95,15 @@ FROM  (
 		(
 			SELECT vw.*
 			FROM vwAgencyInterventionPersonMeasureSubscaleValue vw
-			CROSS APPLY dbo.udfHasAllSubtests(vw.InterventionID, vw.AssessedPersonID, vw.MeasureTypeID, vw.MeasureSubscaleTypeID, 1, 1, @IncludeThreeMonth, @IncludeSixMonth, 0, @IncludeTwelveMonth) c
+			INNER JOIN dbo.udfValidSubtestForAllOccasions(1, @IncludeThreeMonth, @IncludeSixMonth, 0, @IncludeTwelveMonth) s
+				ON vw.InterventionID = s.InterventionID
+				AND vw.AssessedPersonID = s.AssessedPersonID
+				AND vw.RespondentPersonID = s.RespondentPersonID
+				AND vw.MeasureTypeID = s.MeasureTypeID
+				AND vw.MeasureSubscaleTypeID = s.MeasureSubscaleTypeID
 			WHERE
 				(
-					c.MissingCount = 0
-					AND vw.NumericScore IS NOT NULL
+					vw.NumericScore IS NOT NULL
 					AND ( vw.AgencyID				= @AgencyID				OR @AgencyID IS NULL )
 					AND ( vw.InterventionID			= @InterventionID		OR @InterventionID IS NULL )
 					AND ( vw.InterventionTypeID		= @InterventionTypeID	OR @InterventionTypeID IS NULL )
@@ -106,7 +111,6 @@ FROM  (
 					
 					AND ( vw.MeasureTypeID IN (@Dass, @Ecbi, @Ps))
 					AND ( vw.MeasureTypeID			= @MeasureTypeID		OR @MeasureTypeID IS NULL )
-					--AND ( ScoreTypeID				= @ScoreTypeID			OR @ScoreTypeID IS NULL	 )	
 			
 					AND ( @InterventionFacilitatorID IS NULL OR vw.InterventionID IN (SELECT InterventionID FROM Intervention_Facilitator WHERE FacilitatorPersonID=@InterventionFacilitatorID) )
 					AND ( @InterventionStartDateFrom IS NULL OR vw.InterventionStartDate BETWEEN @InterventionStartDateFrom AND @InterventionStartDateTo )
@@ -131,12 +135,12 @@ FROM  (
 
 					AND ( vw.DeliveryFormatTypeID	= @DeliveryFormatTypeID	OR @DeliveryFormatTypeID IS NULL )
 					--is a pre, post or specified f/u
-					AND (
-							( vw.OcassionTypeID IN (@PreTest, @PostTest) ) OR --is pre/post test
-							( (@IncludeThreeMonth = 0) OR (@IncludeThreeMonth = 1 AND vw.OcassionTypeID = @ThreeMonth) ) OR --is 3mo f/u and or 3mo f/u not selected
-							( (@IncludeSixMonth = 0) OR (@IncludeSixMonth = 1 AND vw.OcassionTypeID = @SixMonth) ) OR --is 6mo f/u or 6mo f/u not selected
-							( (@IncludeTwelveMonth = 0) OR (@IncludeTwelveMonth = 1 AND vw.OcassionTypeID = @TwelveMonth) ) --is 12mo f/u or 12mo f/u not selected
-						)
+					--AND (
+					--		( vw.OcassionTypeID IN (@PreTest, @PostTest) ) OR --is pre/post test
+					--		( (@IncludeThreeMonth = 0) OR (@IncludeThreeMonth = 1 AND vw.OcassionTypeID = @ThreeMonth) ) OR --is 3mo f/u and or 3mo f/u not selected
+					--		( (@IncludeSixMonth = 0) OR (@IncludeSixMonth = 1 AND vw.OcassionTypeID = @SixMonth) ) OR --is 6mo f/u or 6mo f/u not selected
+					--		( (@IncludeTwelveMonth = 0) OR (@IncludeTwelveMonth = 1 AND vw.OcassionTypeID = @TwelveMonth) ) --is 12mo f/u or 12mo f/u not selected
+					--	)
 					AND vw.ScoreTypeID IN (@Raw, @RawDoubled)
 				)
 			) AS I
@@ -147,6 +151,7 @@ FROM  (
 		, MeasureSubscaleTypeID
 		, MeasureSubscaleType
 		, AssessedPersonID
+		, RespondentPersonID
 		, ScoreTypeID
 		, SortOrder
 		, [Score Type]
