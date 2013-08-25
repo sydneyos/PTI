@@ -15,13 +15,15 @@ GO
 
 CREATE VIEW [dbo].[vwValidSubtestsForOccasion]
 AS
-	SELECT ifi.OcassionTypeID, ifi.InterventionID, ifi.AssessedPersonID, ifi.RespondentPersonID, fim.MeasureSubscaleTypeID, ifi.MeasureTypeID
+	SELECT ifi.OcassionTypeID, ifi.InterventionID, ifi.AssessedPersonID, ifi.RespondentPersonID, fim.MeasureSubscaleTypeID, ifi.MeasureTypeID, ScoreTypeID
 	FROM [dbo].[FormInstance_MeasureSubscaleValue_ScoreTypeID_Score] fis --include to ensure valid score
 	INNER JOIN [dbo].[FormInstance_MeasureSubscaleValue] fim
 		ON fis.FormInstanceMeasureSubscaleValueID = fim.FormInstanceMeasureSubscaleValueID
 	INNER JOIN [dbo].[FormInstance] ifi
 		ON fim.FormInstanceID = ifi.FormInstanceID
 	WHERE (fim.Invalid = 0 OR fim.Invalid IS NULL)
+	AND NumericScore IS NOT NULL
+	AND ScoreTypeID IS NOT NULL
 GO
 
 

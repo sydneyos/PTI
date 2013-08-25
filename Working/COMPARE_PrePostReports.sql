@@ -28,10 +28,11 @@ DECLARE @IncludeThreeMonth bit
 DECLARE @IncludeSixMonth bit
 DECLARE @IncludeTwelveMonth bit
 
-SELECT @MeasureTypeID = 4
-, @IncludeThreeMonth = 0
+SELECT 
+@IncludeThreeMonth = 0
 , @IncludeSixMonth = 0
 , @IncludeTwelveMonth = 0
+, @MeasureTypeID = 3
 
 
 EXECUTE @RC = [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccasion] 
@@ -63,8 +64,14 @@ EXECUTE @RC = [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccasion
 
 
 -- TODO: Set parameter values here.
+DECLARE @table TABLE (MeasureTypeID INT, Measure VARCHAR(50), MeasureSubscaleTypeID INT, MeasureSubscaleType VARCHAR(50), ScoreTypeID INT, SortOrder INT, ScoreType VARCHAR(50), PreTestCount INT,
+					AvgPretest decimal(5,2), StdDevPre decimal(20, 13), MinPretest decimal(5,2), MaxPretest decimal(5,2), VarPretest decimal(20,13), 
+					CompletedCount INT, AvgPreComp decimal(5,2), StdDevPreComp decimal(20,13), MinPreComp decimal(5,2), MaxPreComp decimal (5,2), VarPreComp decimal(20,13),
+					PostCount INT, AvgPost decimal(5,2), StdDevPost decimal(20,13), MinPost decimal(5,2), MaxPost decimal(5,2), VarPost decimal(20,13), EffectSize decimal(10,4))
 
-EXECUTE @RC = [dbo].[spPrePostInterventionMeasureScoreAnalysis_simple] 
+
+INSERT  @table
+EXEC spPrePostInterventionMeasureScoreAnalysis_simple 
    @AgencyID
   ,@InterventionID
   ,@RespondentPersonID
@@ -87,5 +94,9 @@ EXECUTE @RC = [dbo].[spPrePostInterventionMeasureScoreAnalysis_simple]
   ,@AssessedPersonIsClientOfAgencyID
   ,@RespondentIsNotClientOfAgencyID
   ,@AssessedPersonIsNotClientOfAgencyID
+  
+SELECT MeasureTypeID, Measure, MeasureSubscaleTypeID, MeasureSubscaleType, ScoreTypeID, SortOrder, ScoreType, PreTestCount, CompletedCount
+FROM @table
+WHERE ScoreTypeID IN (3,5)
 GO
 

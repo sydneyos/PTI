@@ -19,13 +19,14 @@ GO
 -- ==============================================================================================
 CREATE FUNCTION udfValidSubtestForAllOccasions 
 (
+	@MeasureTypeID INT,
 	@IncludePostTest bit = 1,
 	@IncludeThreeMo bit = 0,
 	@IncludeSixMo bit = 0,
 	@IncludeNineMo bit = 0,
 	@IncludeTwelveMo bit = 0
 )
-RETURNS @table TABLE (InterventionID INT, AssessedPersonID INT, RespondentPersonID INT, MeasureTypeID INT, MeasureSubscaleTypeID INT)
+RETURNS @table TABLE (InterventionID INT, AssessedPersonID INT, RespondentPersonID INT, MeasureTypeID INT, MeasureSubscaleTypeID INT, ScoreTypeID INT)
 AS
 BEGIN
 	DECLARE @PreTest INT, @PostTest INT, @ThreeMonth INT, @SixMonth INT, @NineMonth INT, @TwelveMonth INT
@@ -37,7 +38,8 @@ BEGIN
 		AssessedPersonID, 
 		RespondentPersonID, 
 		MeasureTypeID, 
-		MeasureSubscaleTypeID
+		MeasureSubscaleTypeID,
+		ScoreTypeID
 	FROM 
 		(
 			SELECT DISTINCT 
@@ -46,6 +48,7 @@ BEGIN
 				RespondentPersonID, 
 				MeasureTypeID, 
 				MeasureSubscaleTypeID,
+				ScoreTypeID,
 				[1],
 				[2],
 				[5],
@@ -58,12 +61,14 @@ BEGIN
 				AssessedPersonID, 
 				RespondentPersonID, 
 				MeasureTypeID, 
-				MeasureSubscaleTypeID, 
+				MeasureSubscaleTypeID,
+				ScoreTypeID, 
 				v.OcassionTypeID, 
 				1 as Placeholder
 				FROM vwValidSubtestsForOccasion v
 				INNER JOIN OcassionType o
 				ON v.OcassionTypeID = o.OcassionTypeID
+				WHERE (@MeasureTypeID IS NULL OR (v.MeasureTypeID = @MeasureTypeID))
 				) T
 			PIVOT (
 				AVG(Placeholder)
