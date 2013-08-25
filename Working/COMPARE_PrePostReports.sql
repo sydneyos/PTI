@@ -35,7 +35,7 @@ SELECT
 , @MeasureTypeID = 3
 
 
-EXECUTE @RC = [dbo].[spReport_PrePostInterventionMeasureScoreAnalysis_ByOccasion] 
+EXECUTE @RC = [dbo].[spReport_OutcomesOverTime] 
    @AgencyID
   ,@InterventionID
   ,@RespondentPersonID
