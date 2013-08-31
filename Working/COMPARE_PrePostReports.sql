@@ -29,7 +29,7 @@ DECLARE @IncludeSixMonth bit
 DECLARE @IncludeTwelveMonth bit
 
 SELECT 
-@IncludeThreeMonth = 0
+@IncludeThreeMonth = 1
 , @IncludeSixMonth = 0
 , @IncludeTwelveMonth = 0
 , @MeasureTypeID = 3

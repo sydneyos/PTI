@@ -49,6 +49,7 @@ DECLARE
 
 SELECT @Dass = 4, @Ecbi = 1, @Ps = 3 
 
+
 DECLARE @SummaryTable TABLE (
 	ParticipantTotal INT
 	, ParticipantInterventionTotal INT
@@ -81,8 +82,6 @@ DECLARE @AllScores TABLE (
 	, PosttestScore DECIMAL(5,2)
 )
 
-SELECT @MeasureTypeID = 4
-
 DECLARE @PreTestCount INT
 
 --PRETESTS
@@ -97,7 +96,29 @@ SELECT InterventionID
 	, a.ScoreTypeID
 	, [Pretest Numeric Score] as PretestScore
 	, [Posttest Numeric Score] as PosttestScore
-FROM  [dbo].[vwAgencyInterventionPersonMeasureSubscaleValuee_Pretest_Posttest] a
+FROM  dbo.udfReport_AgencyInterventionPersonMeasureSubscaleValuePrePost_Filtered(
+	@AgencyID
+  ,@InterventionID
+  ,@RespondentPersonID
+  ,@AssessedPersonID
+  ,@MeasureTypeID
+  ,@InterventionTypeID
+  ,@InterventionSubtypeID
+  ,@InterventionFacilitatorID
+  ,@InterventionStartDateFrom
+  ,@InterventionStartDateTo
+  ,@InterventionLanguageID
+  ,@AnnualIncomeTypeID
+  ,@EthnicityID
+  ,@EthnicityMajorGroupID
+  ,@Exclude_AgencyID
+  ,@Exclude_InterventionFacilitatorID
+  ,@DeliveryFormatTypeID
+  ,@RespondentGenderID
+  ,@RespondentIsClientOfAgencyID
+  ,@AssessedPersonIsClientOfAgencyID
+  ,@RespondentIsNotClientOfAgencyID
+  ,@AssessedPersonIsNotClientOfAgencyID) a
 INNER JOIN [dbo].[vwMeasureType_MeasureSubscaleType_ScoreType] st
 		ON a.MeasureTypeID = st.MeasureTypeID
 		AND a.MeasureSubscaleTypeID = st.MeasureSubscaleTypeID
@@ -170,6 +191,7 @@ SET OverCutoffPretestPercent = (OverCutoffPretestCount * 100)/ValidPretestCount
 , WorseAtPosttestPercent = (WorseAtPosttestCount * 100)/(ValidPretestCount - OverCutoffPretestCount)
 
 SELECT * FROM @SummaryTable
+
 
 GO
 

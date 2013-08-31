@@ -1,61 +1,84 @@
 USE [PTI]
 GO
-/****** Object:  StoredProcedure [dbo].[spReport_OutcomesOverTime]    Script Date: 8/25/2013 7:09:35 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[spReport_OutcomesOverTime]
-	@AgencyID							int = NULL,
-	@InterventionID						int = NULL,
-	@RespondentPersonID					int = NULL,
-	@AssessedPersonID					int = NULL,
-	@MeasureTypeID						int = NULL,
-	@InterventionTypeID					int = NULL,
-	@InterventionSubtypeID				int = NULL,
-	@InterventionFacilitatorID			int = NULL,
-	@InterventionStartDateFrom			datetime = NULL,
-	@InterventionStartDateTo			datetime = NULL,
-	@InterventionLanguageID				int = NULL,
-	@AnnualIncomeTypeID					int = NULL,
-	@EthnicityID						int = NULL,
-	@EthnicityMajorGroupID              int = NULL,
-	@Exclude_AgencyID					int = NULL,
-	@Exclude_InterventionFacilitatorID	int = NULL,
-	@DeliveryFormatTypeID				int = NULL,
-	@RespondentGenderID					int = NULL,
-	@RespondentIsClientOfAgencyID		int = NULL,
-	@AssessedPersonIsClientOfAgencyID	int = NULL,
-	@RespondentIsNotClientOfAgencyID		int = NULL,
-	@AssessedPersonIsNotClientOfAgencyID	int = NULL,
-	@IncludeThreeMonth					bit = 0,
-	@IncludeSixMonth					bit = 0,
-	@IncludeTwelveMonth					bit = 0
-AS
 
-------------------------------------------------------------------------------------
--- These 3 lines added by MF 8/25/2013 because NULLs passed by VB did not become 0
-------------------------------------------------------------------------------------
-SET @IncludeThreeMonth = ISNULL(@IncludeThreeMonth,0)
-SET @IncludeSixMonth = ISNULL(@IncludeSixMonth,0)
-SET @IncludeTwelveMonth = ISNULL(@IncludeTwelveMonth,0)
-------------------------------------------------------------------------------------
+DECLARE @RC int
+DECLARE @AgencyID int
+DECLARE @InterventionID int
+DECLARE @RespondentPersonID int
+DECLARE @AssessedPersonID int
+DECLARE @MeasureTypeID int
+DECLARE @InterventionTypeID int
+DECLARE @InterventionSubtypeID int
+DECLARE @InterventionFacilitatorID int
+DECLARE @InterventionStartDateFrom datetime
+DECLARE @InterventionStartDateTo datetime
+DECLARE @InterventionLanguageID int
+DECLARE @AnnualIncomeTypeID int
+DECLARE @EthnicityID int
+DECLARE @EthnicityMajorGroupID int
+DECLARE @Exclude_AgencyID int
+DECLARE @Exclude_InterventionFacilitatorID int
+DECLARE @DeliveryFormatTypeID int
+DECLARE @RespondentGenderID int
+DECLARE @RespondentIsClientOfAgencyID int
+DECLARE @AssessedPersonIsClientOfAgencyID int
+DECLARE @RespondentIsNotClientOfAgencyID int
+DECLARE @AssessedPersonIsNotClientOfAgencyID int
+DECLARE @IncludeThreeMonth bit
+DECLARE @IncludeSixMonth bit
+DECLARE @IncludeTwelveMonth bit
+DECLARE @MeasureSubscaleTypeID INT
 
-	DECLARE @PreTest INT,
-		@PostTest INT,
-		@ThreeMonth INT,
-		@SixMonth INT,
-		@TwelveMonth INT,
-		@Dass INT,
-		@Ecbi INT,
-		@Ps INT,
-		@Raw INT,
-		@RawDoubled INT
+DECLARE @PreTest INT,
+	@PostTest INT,
+	@ThreeMonth INT,
+	@SixMonth INT,
+	@TwelveMonth INT,
+	@Dass INT,
+	@Ecbi INT,
+	@Ps INT,
+	@Raw INT,
+	@RawDoubled INT
 
-	SELECT @PreTest = 1, @PostTest = 2, @ThreeMonth = 5, @SixMonth = 3, @TwelveMonth = 4,
+SELECT @PreTest = 1, @PostTest = 2, @ThreeMonth = 5, @SixMonth = 3, @TwelveMonth = 4,
 	@Dass = 4, @Ecbi = 1, @Ps = 3,
 	@Raw = 5, @RawDoubled = 3
-		
+	
+SELECT @IncludeThreeMonth = 1
+, @IncludeSixMonth = 0
+, @IncludeTwelveMonth = 0
+, @MeasureTypeID = @Ps
+, @MeasureSubscaleTypeID = 25
+
+
+EXECUTE @RC = [dbo].[spReport_OutcomesOverTime] 
+   @AgencyID
+  ,@InterventionID
+  ,@RespondentPersonID
+  ,@AssessedPersonID
+  ,@MeasureTypeID
+  ,@InterventionTypeID
+  ,@InterventionSubtypeID
+  ,@InterventionFacilitatorID
+  ,@InterventionStartDateFrom
+  ,@InterventionStartDateTo
+  ,@InterventionLanguageID
+  ,@AnnualIncomeTypeID
+  ,@EthnicityID
+  ,@EthnicityMajorGroupID
+  ,@Exclude_AgencyID
+  ,@Exclude_InterventionFacilitatorID
+  ,@DeliveryFormatTypeID
+  ,@RespondentGenderID
+  ,@RespondentIsClientOfAgencyID
+  ,@AssessedPersonIsClientOfAgencyID
+  ,@RespondentIsNotClientOfAgencyID
+  ,@AssessedPersonIsNotClientOfAgencyID
+  ,@IncludeThreeMonth
+  ,@IncludeSixMonth
+  ,@IncludeTwelveMonth
+
+
   	SELECT 
 		 U.MeasureTypeID 
 		, U.Measure
@@ -136,19 +159,6 @@ SET @IncludeTwelveMonth = ISNULL(@IncludeTwelveMonth,0)
 
 							AND ( DeliveryFormatTypeID	= @DeliveryFormatTypeID	OR @DeliveryFormatTypeID IS NULL )
 							AND ScoreTypeID IN (@Raw, @RawDoubled)
-							
-							--original requirements hardcode only certain measures and subscales
-							AND (
-								(MeasureTypeID = @Dass AND MeasureSubscaleTypeID IN (17, 10, 16, 18) AND ScoreTypeID = 3)
-								OR (MeasureTypeID = @Ecbi AND MeasureSubscaleTypeID IN (1,2) AND ScoreTypeID = 5)
-								OR (MeasureTypeID = @Ps 
-									AND (
-										MeasureSubscaleTypeID IN (11,12,13,14) --3F
-										OR MeasureSubscaleTypeID IN (23,24,25,26) --2F
-									)
-									AND ScoreTypeID = 5
-								)
-							)
 						) 
 					) vw
 					ON vw.InterventionID = s.InterventionID
@@ -197,19 +207,7 @@ SET @IncludeTwelveMonth = ISNULL(@IncludeTwelveMonth,0)
 			@AssessedPersonIsClientOfAgencyID,
 			@RespondentIsNotClientOfAgencyID,
 			@AssessedPersonIsNotClientOfAgencyID)
-			WHERE OcassionTypeID = @PreTest			
-			--original requirements hardcode only certain measures and subscales
-			AND (
-				(MeasureTypeID = @Dass AND MeasureSubscaleTypeID IN (17, 10, 16, 18) AND ScoreTypeID = 3)
-				OR (MeasureTypeID = @Ecbi AND MeasureSubscaleTypeID IN (1,2) AND ScoreTypeID = 5)
-				OR (MeasureTypeID = @Ps 
-					AND (
-						MeasureSubscaleTypeID IN (11,12,13,14) --3F
-						OR MeasureSubscaleTypeID IN (23,24,25,26) --2F
-					)
-					AND ScoreTypeID = 5
-				)
-			)
+			WHERE OcassionTypeID = @PreTest
 			GROUP BY MeasureTypeID, Measure, MeasureSubscaleTypeID, MeasureSubscaleType, ScoreTypeID, [Score Type]
 		) U
 			ON T.MeasureTypeID = U.MeasureTypeID
@@ -228,18 +226,3 @@ SET @IncludeTwelveMonth = ISNULL(@IncludeTwelveMonth,0)
 		Measure, 
 		MeasureSubscaleType,
 		SortOrder
-
-	SET NOCOUNT OFF
-
-
-
-
-
-
-
-
-
-
-
-
-

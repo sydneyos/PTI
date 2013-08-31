@@ -76,7 +76,8 @@ BEGIN
 				IN ([1], [2], [5], [3], [6], [4]) 
 			) AS P
 		) O
-	WHERE (@IncludePostTest = 0 OR (@IncludePostTest = 1 AND [2] IS NOT NULL))
+	WHERE [1] IS NOT NULL
+	AND (@IncludePostTest = 0 OR (@IncludePostTest = 1 AND [2] IS NOT NULL))
 	AND (@IncludeThreeMo = 0 OR (@IncludeThreeMo = 1 AND [5] IS NOT NULL))
 	AND (@IncludeSixMo = 0 OR (@IncludeSixMo = 1 AND [3] IS NOT NULL))
 	AND (@IncludeNineMo = 0 OR (@IncludeNineMo = 1 AND [6] IS NOT NULL))
